@@ -1,0 +1,27 @@
+{
+  "name": "project_vortex",
+  "version": "0.0.1",
+  "description": "typescript based library",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "grunt dev"
+  },
+  "keywords": [
+    "typescript",
+    "javascript",
+    "programming"
+  ],
+  "author": "happyCoda",
+  "license": "ISC",
+  "devDependencies": {
+    "browserify": "^13.1.0",
+    "grunt": "^1.0.1",
+    "grunt-contrib-clean": "^1.0.0",
+    "grunt-contrib-connect": "^1.0.2",
+    "grunt-contrib-watch": "^1.0.0",
+    "nodemon": "^1.10.2",
+    "time-grunt": "^1.4.0",
+    "tsify": "^1.0.8",
+    "typescript": "^2.0.3"
+  }
+}
