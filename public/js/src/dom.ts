@@ -2,7 +2,7 @@ interface IDom {
   grab(selector: string): HTMLElement;
   spawn(nodeName: string, attrs?: any, content?: string): HTMLElement;
   setAttrs(el: HTMLElement, attrs: any): void;
-  inject(victim: HTMLElement, parasite: HTMLElement): void;
+  inject(victim: HTMLElement, parasite: HTMLElement, before?: HTMLElement): void;
 }
 
 class Dom implements IDom {
@@ -37,8 +37,12 @@ class Dom implements IDom {
     });
   }
 
-  inject(victim, parasite) {
-    victim.appendChild(parasite);
+  inject(victim, parasite, before?) {
+    if (before) {
+      victim.insertBefore(parasite, before);
+    } else {
+      victim.appendChild(parasite);
+    }
   }
 }
 

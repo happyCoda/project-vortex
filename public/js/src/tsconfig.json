@@ -1,0 +1,14 @@
+{
+  "buildOnSave": false,
+  "compileOnSave": false,
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "experimentalDecorators": true,
+    "types": ["vue-typescript-import-dts"]
+  },
+  "filesGlob": [
+    "**/*.ts",
+    "!node_modules"
+  ]
+}

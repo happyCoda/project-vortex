@@ -1,70 +1,111 @@
-module.exports = function (grunt) {
-  const JS_PATH = `${__dirname}/js`;
-  let fs = require('fs'),
-    browserify = require('browserify'),
-    tsify = require('tsify'),
-    time = require('time-grunt');
+module.exports = function(grunt) {
+    const PUBLIC_PATH = `${__dirname}/public`;
+    let browserify = require('browserify'),
+        tsify = require('tsify'),
+        vueify = require('vueify'),
+        babelify = require('babelify'),
+        bsServer = require('browser-sync').create(),
+        chokidar = require('chokidar'),
+        time = require('time-grunt');
 
-  grunt.initConfig({
-    pkg: grunt.file.readJSON(`${__dirname}/package.json`),
-    clean: {
-      options: {},
-      dev: {
-        src: [`${JS_PATH}/dest/*.js`]
-      }
-    },
+    time(grunt);
 
-    connect: {
-      options: {
-        hostname: 'localhost',
-        port: 1337,
-        livereload: 1338,
-        base: './'
-      },
-
-      dev: {}
-    },
-    watch: {
-      options: {
-        livereload: 1338
-      },
-      dev: {
-        files: [`${__dirname}/index.html`, `${JS_PATH}/src/*.ts`, `Gruntfile.js`],
-        tasks: ['clean:dev', 'compile:dev']
-      }
-    }
-  });
-
-  time(grunt);
-
-  grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-contrib-clean');
-  grunt.loadNpmTasks('grunt-contrib-connect');
-
-  grunt.registerTask('compile', function () {
-    let done = this.async();
-
-    browserify({
-      basedir: '.',
-      entries: [
-        `${JS_PATH}/src/main.ts`,
-        `${JS_PATH}/src/dom.ts`
-      ]
-    })
-    .plugin(tsify, {target: 'es6'})
-    .on('error', (err) => {
-      console.log(err);
-    })
-    .bundle((err, src) => {
-
-      fs.writeFile(`${JS_PATH}/dest/bundle.js`, src,  (err) => {
-        if (err) {
-          throw new Error(err);
-        }
-        done();
-      })
+    grunt.initConfig({
+        pkg: grunt.file.readJSON(`${__dirname}/package.json`)
     });
-  });
 
-  grunt.registerTask('dev', ['connect:dev', 'watch:dev']);
+    grunt.registerTask('watch', function() {
+        let done = this.async(),
+            watcher = chokidar.watch([
+                `${PUBLIC_PATH}/index.html`,
+                `${PUBLIC_PATH}/js/src/**/*.ts`,
+                `${PUBLIC_PATH}/js/src/**/*.vue`,
+                `${PUBLIC_PATH}/js/dest/**/*.js`,
+                `Gruntfile.js`
+            ]),
+            child;
+
+        watcher.on('ready', () => {
+            watcher.on('all', (event, file) => {
+                grunt.log.writeln(`file: ${file} has been ${event}`);
+
+                switch (true) {
+                    // matchBase is provided to match filenames with slashes, eg.: path/to/file.js
+                    case grunt.file.isMatch({
+                        matchBase: true
+                    }, '*.ts', file) || grunt.file.isMatch({
+                        matchBase: true
+                    }, '*.vue', file):
+                        child = grunt.util.spawn({
+                            grunt: true,
+                            args: ['clean', 'compile']
+                        }, (err, result, code) => {
+                            grunt.log.writeln(result.stdout);
+                        });
+                        break;
+                    case grunt.file.isMatch({
+                        matchBase: true
+                    }, '*.html', file):
+                        bsServer.reload();
+                        break;
+                    case grunt.file.isMatch({
+                        matchBase: true
+                    }, '*.js', file) && event !== 'unlink':
+                        bsServer.reload();
+                        break;
+                }
+            });
+        });
+    });
+
+    grunt.registerTask('clean', function() {
+        let done = this.async(),
+            paths = grunt.file.expand(`${PUBLIC_PATH}/js/dest/*.js`);
+
+        paths.forEach((path) => {
+            grunt.file.delete(path);
+        });
+        grunt.log.writeln('Deleted files and folders:\n', paths.join('\n'));
+        done();
+    });
+
+    grunt.registerTask('connect', function() {
+        // start the Browsersync server
+        bsServer
+            .init({
+                port: 1337,
+                server: {
+                    baseDir: PUBLIC_PATH,
+                    index: 'index.html'
+                },
+                open: false
+            });
+    });
+    grunt.registerTask('compile', function() {
+        let done = this.async();
+
+        browserify({
+                basedir: '.',
+                entries: grunt.file.expand(`${PUBLIC_PATH}/js/src/main.ts`)
+            })
+            .plugin(tsify, {
+                target: 'es6',
+                experimentalDecorators: true,
+                types: ["vue-typescript-import-dts"]
+            })
+            .transform(vueify)
+            .transform(babelify)
+            .bundle((err, src) => {
+                let path = `${PUBLIC_PATH}/js/dest/bundle.js`;
+
+                grunt.file.write(path, src);
+                grunt.log.writeln(`file: ${PUBLIC_PATH}/js/dest/bundle.js created`);
+                done();
+            })
+            .on('error', (err) => {
+                grunt.log.writeln(err);
+                done();
+            });
+    });
+    grunt.registerTask('dev', ['connect', 'watch']);
 };
