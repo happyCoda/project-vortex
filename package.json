@@ -31,6 +31,7 @@
     "vue-router": "^2.0.2",
     "vue-typescript-component": "^0.5.0",
     "vue-typescript-import-dts": "^2.0.0",
-    "vueify": "^9.2.4"
+    "vueify": "^9.2.4",
+    "watchify": "^3.7.0"
   }
 }
